@@ -6,7 +6,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from filters import IsPrivate
 from loader import dp
-from utils.db_api import quick_commands as commands
+from utils.db_api import ie_commands as commands
 from states import bot_mailing
 
 from data.config import admins

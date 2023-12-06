@@ -5,7 +5,7 @@ from aiogram import types
 import asyncio
 
 from parser.formation import creation
-from utils.db_api.quick_commands import db_run_stop, sufficient_balance, user_balance, get_number_machines, is_running
+from utils.db_api.ie_commands import db_run_stop, sufficient_balance, user_balance, get_number_machines, is_running
 
 
 # пользователь нажал run

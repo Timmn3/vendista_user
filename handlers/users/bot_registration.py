@@ -14,7 +14,7 @@ from loader import dp
 from message.send_mess import send_mess
 from parser.verification import main_authorize
 from states import Registration
-from utils.db_api.quick_commands import update_user, update_machines, get_user_email, get_tg_first_name, users_count
+from utils.db_api.ie_commands import update_user, update_machines, get_user_email, get_tg_first_name, users_count
 
 
 @dp.message_handler(text='Отменить регистрацию', state=[Registration.email, Registration.password,

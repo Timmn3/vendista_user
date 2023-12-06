@@ -7,7 +7,7 @@ from aiogram import types
 from keyboards.default import kb_data, cancel_change, kb_run_stop, kb_restart
 from loader import dp
 from states import ChangeData
-from utils.db_api.quick_commands import get_user_number_machines, change_user_number_machines, \
+from utils.db_api.ie_commands import get_user_number_machines, change_user_number_machines, \
     change_user_name_machines
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 

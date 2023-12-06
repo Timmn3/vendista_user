@@ -1,7 +1,7 @@
 from aiogram import types
 from aiogram.dispatcher.filters import BoundFilter
 
-from utils.db_api.quick_commands import get_number_machines
+from utils.db_api.ie_commands import get_number_machines
 
 
 class HasMachines(BoundFilter):

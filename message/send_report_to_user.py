@@ -1,5 +1,5 @@
 from message.send_mess import send_mess
-from utils.db_api.quick_commands import get_sales
+from utils.db_api.ie_commands import get_sales
 import datetime
 from loguru import logger
 

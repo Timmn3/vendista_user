@@ -1,5 +1,5 @@
 from parser.restart_parser import restart_parser_for_all
-from utils.db_api.quick_commands import delete_all_sales, balance_daily_write_off, reset_all_users_is_run
+from utils.db_api.ie_commands import delete_all_sales, balance_daily_write_off, reset_all_users_is_run
 import aiocron
 
 

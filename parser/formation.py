@@ -1,5 +1,5 @@
 from parser.parser import run_main_parser
-from utils.db_api.quick_commands import get_user_data_for_pars
+from utils.db_api.ie_commands import get_user_data_for_pars
 
 
 async def creation(user_id):

@@ -12,8 +12,8 @@ from keyboards.inline.ikb_balance import ikb_check_payment
 from loader import dp
 from message.send_mess import send_mess
 from states import Balance
-from utils.db_api import quick_commands as commands
-from utils.db_api.quick_commands import change_bill_id, user_bill_id, clear_bill_id, change_balance
+from utils.db_api import ie_commands as commands
+from utils.db_api.ie_commands import change_bill_id, user_bill_id, clear_bill_id, change_balance
 from utils.misc.qiwi import payment, payment_verification, cancel_payment, amount_of_payment
 from loguru import logger
 

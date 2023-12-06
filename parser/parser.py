@@ -11,7 +11,7 @@ from loguru import logger
 from data.config import admins
 from message.send_mess import send_mess
 from message.send_report_to_user import send_report_to_user
-from utils.db_api.quick_commands import is_running, add_sales_to_database, sufficient_balance, db_run_stop
+from utils.db_api.ie_commands import is_running, add_sales_to_database, sufficient_balance, db_run_stop
 
 if platform.system() == 'Windows':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())

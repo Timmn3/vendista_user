@@ -10,9 +10,9 @@ from keyboards.default import kb_user_data, cancel_change, kb_run_stop, kb_resta
 from loader import dp
 from parser.verification import main_authorize
 from states import ChangeUserData
-from utils.db_api.quick_commands import change_user_email, change_user_password, \
+from utils.db_api.ie_commands import change_user_email, change_user_password, \
     change_user_report_time, change_user_other_users
-from utils.db_api.quick_commands import get_user_email
+from utils.db_api.ie_commands import get_user_email
 
 
 @dp.message_handler(text='Отменить', state=[ChangeUserData.choice, ChangeUserData.new_value, ChangeUserData.email,

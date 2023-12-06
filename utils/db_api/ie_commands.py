@@ -1,0 +1,194 @@
+from asyncpg import UniqueViolationError
+from loguru import logger
+
+from utils.db_api.db_gino import db
+from utils.db_api.shemas.ie import IndividualEntrepreneur
+
+
+async def add_user(user_id: int, tg_first_name: str, tg_last_name: str, name: str, email: str, password: str,
+                   time_update: int, status: str, is_run: bool, balance: float, number_ie: int, sms_status: bool,
+                   bill_id: str):
+    try:
+        user = IndividualEntrepreneur(user_id=user_id, tg_first_name=tg_first_name, tg_last_name=tg_last_name,
+                                      name=name, email=email, password=password, time_update=time_update,
+                                      status=status, is_run=is_run, balance=balance, number_ie=number_ie,
+                                      sms_status=sms_status, bill_id=bill_id)
+        await user.create()
+    except UniqueViolationError:
+        logger.exception('Ошибка при добавлении ИП')
+
+
+async def select_user(user_id):
+    try:
+        user = await IndividualEntrepreneur.query.where(IndividualEntrepreneur.user_id == user_id).gino.first()
+        return user
+    except Exception as e:
+        logger.exception(f'Ошибка при выборе пользователя: {e}')
+
+
+async def db_run_stop(user_id: int, value: bool):
+    """ функция внесения в БД состояния работы парсинга"""
+    try:
+        user = await select_user(user_id)
+        await user.update(is_run=value).apply()
+    except Exception as e:
+        logger.exception(f'Ошибка при изменении is_run пользователя: {e}')
+
+
+async def reset_all_users_is_run():
+    """ Устанавливаем всем пользователям False"""
+    try:
+        await IndividualEntrepreneur.update.values(is_run=False).gino.status()
+    except Exception as e:
+        logger.exception(f'Ошибка при сбросе поля is_run для всех пользователей: {e}')
+
+
+async def is_running(user_id: int):
+    """ Проверка состояния запущенного парсинга"""
+    try:
+        user = await select_user(user_id)
+        if user:
+            return user.is_run
+        else:
+            return None
+    except Exception as e:
+        logger.exception(f'Ошибка при получении состояния is_run пользователя: {e}')
+
+
+async def get_user_data(user_id):
+    try:
+        user = await select_user(user_id)
+        if user:
+            return {
+                'email': user.email,
+                'password': user.password,
+                'time_update': user.time_update,
+            }
+        else:
+            return None
+    except Exception as e:
+        logger.exception(f'Ошибка при получении данных пользователя: {e}')
+
+
+async def change_user_email(user_id: int, new_email: str):
+    try:
+        user = await select_user(user_id)
+        await user.update(email=new_email).apply()
+    except Exception as e:
+        logger.exception(f'Ошибка при изменении email пользователя: {e}')
+
+
+async def get_user_email(user_id: int):
+    try:
+        user = await select_user(user_id)
+        if user is not None:
+            return user.email
+        else:
+            return None
+    except Exception as e:
+        logger.exception(f'Ошибка при запросе email пользователя: {e}')
+
+
+async def change_user_password(user_id: int, new_password: str):
+    try:
+        user = await select_user(user_id)
+        await user.update(password=new_password).apply()
+    except Exception as e:
+        logger.exception(f'Ошибка при изменении пароля пользователя: {e}')
+
+
+async def update_status(user_id, status):
+    try:
+        user = await select_user(user_id)
+        await user.update(status=status).apply()
+    except Exception as e:
+        logger.exception(f'Ошибка при обновлении статуса пользователя: {e}')
+
+
+async def check_args(args, user_id: int):
+    try:
+        if args == '':
+            args = '0'
+            return args
+        elif not args.isnumeric():
+            args = '0'
+            return args
+        elif args.isnumeric():
+            if int(args) == user_id:
+                args = '0'
+                return args
+            elif await select_user(user_id=int(args)) is None:
+                args = '0'
+                return args
+            else:
+                args = str(args)
+                return args
+        else:
+            args = '0'
+            return args
+    except Exception as e:
+        logger.exception(f'Ошибка при проверке аргументов: {e}')
+
+
+async def change_balance(user_id: int, amount):
+    try:
+        user = await select_user(user_id)
+        new_balance = float(user.balance) + float(amount)
+        await user.update(balance=new_balance).apply()
+    except Exception as e:
+        logger.exception(f'Ошибка при изменении баланса пользователя: {e}')
+
+
+async def check_balance(user_id: int, amount):
+    try:
+        user = await select_user(user_id=user_id)
+        try:
+            amount = float(amount)
+            if user.balance + amount >= 0:
+                await change_balance(user_id, amount)
+                return True
+            elif user.balance + amount < 0:
+                return 'no maney'
+        except Exception as e:
+            logger.exception(e)
+            return False
+    except Exception as e:
+        logger.exception(f'Ошибка при проверке баланса: {e}')
+
+
+async def user_balance(user_id: int):  # какой баланс у пользователя
+    user = await select_user(user_id)  # получаем юзера
+    try:
+        return user.balance
+    except Exception as e:
+        logger.exception(f'Ошибка user_balance: {e}')
+        return False
+
+
+async def user_bill_id(user_id: int):  # получаем идентификатор заказа
+    user = await select_user(user_id)  # получаем юзера
+    return user.bill_id
+
+
+async def change_bill_id(user_id: int, value):  # изменяем идентификатор заказа
+    user = await select_user(user_id)
+    new_bill_id = value
+    await user.update(bill_id=new_bill_id).apply()
+
+
+async def clear_bill_id(user_id: int):  # очищаем идентификатор заказа
+    user = await select_user(user_id)
+    await user.update(bill_id='').apply()
+
+
+# выбрать всех пользователей с необходимым балансом
+async def select_all_users_big_balance():
+    users = await IndividualEntrepreneur.select('user_id').where(IndividualEntrepreneur.balance > 4).gino.all()
+    return users
+
+
+# выбрать всех пользователей с балансом меньше 15 рублей
+async def select_all_users_balance_lower():
+    users = await IndividualEntrepreneur.select('user_id').where(IndividualEntrepreneur.balance < 15).gino.all()
+    return users
+

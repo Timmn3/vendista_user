@@ -3,7 +3,7 @@ from aiogram import types
 from filters import IsPrivate
 from filters.has_mashine import HasMachines
 from loader import dp
-from utils.db_api.quick_commands import get_user_data
+from utils.db_api.ie_commands import get_user_data
 
 
 @dp.message_handler(HasMachines(), IsPrivate(), text="/info", )

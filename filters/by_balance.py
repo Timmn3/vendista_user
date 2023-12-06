@@ -2,7 +2,7 @@ from aiogram.dispatcher.filters import BoundFilter
 from aiogram import types
 
 from loader import dp
-from utils.db_api import quick_commands as commands
+from utils.db_api import ie_commands as commands
 
 class PositiveBalance(BoundFilter):  # проверка достаточный ли баланс
     async def check(self, message: types.Message):

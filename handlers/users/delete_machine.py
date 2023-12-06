@@ -7,7 +7,7 @@ from aiogram import types
 from keyboards.default import kb_restart
 from loader import dp
 from states import Delete
-from utils.db_api.quick_commands import get_user_number_machines, delete_machine
+from utils.db_api.ie_commands import get_user_number_machines, delete_machine
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 

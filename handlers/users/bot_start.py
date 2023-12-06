@@ -4,7 +4,7 @@ from aiogram.dispatcher.filters import CommandStart
 from filters import IsPrivate
 from keyboards.default import kb_register_machine
 from loader import dp
-from utils.db_api import quick_commands as commands
+from utils.db_api import ie_commands as commands
 from utils.misc import rate_limit
 
 
