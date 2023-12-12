@@ -19,5 +19,7 @@ class IndividualEntrepreneur(TimedBaseModel):
     number_ie = Column(BigInteger)
     sms_status = Column(Boolean)
     bill_id = Column(String(200))
+    report_time = Column(String(100))
+    report_state = Column(Boolean)
 
     query: sql.select

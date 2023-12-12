@@ -3,7 +3,6 @@ import logging
 from aiogram import Dispatcher
 
 from data.config import admins
-from utils.db_api.ie_commands import count_ie
 from loguru import logger
 
 from utils.db_api.users_commands import count_users
