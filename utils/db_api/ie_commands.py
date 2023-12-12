@@ -5,17 +5,26 @@ from utils.db_api.db_gino import db
 from utils.db_api.shemas.ie import IndividualEntrepreneur
 
 
-async def add_user(user_id: int, tg_first_name: str, tg_last_name: str, name: str, email: str, password: str,
-                   time_update: int, status: str, is_run: bool, balance: float, number_ie: int, sms_status: bool,
-                   bill_id: str):
+async def add_ie(user_id: int, tg_first_name: str, tg_last_name: str, name: str, email: str, password: str,
+                 time_update: int, last_time: str, status: str, is_run: bool, balance: float, number_ie: int,
+                 sms_status: bool, bill_id: str):
     try:
-        user = IndividualEntrepreneur(user_id=user_id, tg_first_name=tg_first_name, tg_last_name=tg_last_name,
-                                      name=name, email=email, password=password, time_update=time_update,
-                                      status=status, is_run=is_run, balance=balance, number_ie=number_ie,
-                                      sms_status=sms_status, bill_id=bill_id)
-        await user.create()
+        ie = IndividualEntrepreneur(user_id=user_id, tg_first_name=tg_first_name, tg_last_name=tg_last_name,
+                                    name=name, email=email, password=password, time_update=time_update,
+                                    last_time=last_time, status=status, is_run=is_run, balance=balance,
+                                    number_ie=number_ie, sms_status=sms_status, bill_id=bill_id)
+        await ie.create()
     except UniqueViolationError:
         logger.exception('Ошибка при добавлении ИП')
+
+
+async def count_ie():
+    try:
+        count = await db.func.count(IndividualEntrepreneur.user_id).gino.scalar()
+        return count
+    except Exception as e:
+        logger.exception(f'Ошибка при подсчете пользователей: {e}')
+        return None
 
 
 async def select_user(user_id):
@@ -55,19 +64,23 @@ async def is_running(user_id: int):
         logger.exception(f'Ошибка при получении состояния is_run пользователя: {e}')
 
 
-async def get_user_data(user_id):
+async def get_users_data():
     try:
-        user = await select_user(user_id)
-        if user:
-            return {
-                'email': user.email,
+        users_data = []
+        users = await IndividualEntrepreneur.query.where(IndividualEntrepreneur.is_run == True).gino.all()
+
+        for user in users:
+            user_data = {
+                'user_id': user.user_id,
+                'login': user.email,  # Используйте соответствующее поле для логина
                 'password': user.password,
-                'time_update': user.time_update,
             }
-        else:
-            return None
+            users_data.append(user_data)
+
+        return users_data
     except Exception as e:
-        logger.exception(f'Ошибка при получении данных пользователя: {e}')
+        logger.exception(f'Ошибка при получении данных пользователей: {e}')
+        return None
 
 
 async def change_user_email(user_id: int, new_email: str):
@@ -191,4 +204,52 @@ async def select_all_users_big_balance():
 async def select_all_users_balance_lower():
     users = await IndividualEntrepreneur.select('user_id').where(IndividualEntrepreneur.balance < 15).gino.all()
     return users
+
+
+async def change_email_and_password(user_id: int, new_email: str, new_password: str):
+    """ Измените адрес электронной почты и пароль"""
+    try:
+        user = await select_user(user_id)
+        await user.update(email=new_email, password=new_password).apply()
+    except Exception as e:
+        logger.exception(f'Ошибка при изменении email и пароля пользователя: {e}')
+
+
+async def get_sms_status_ie(user_id: int):
+    """ Получить статус SMS предпринимателя """
+    try:
+        # Выбираем пользователя
+        user = await IndividualEntrepreneur.query.where(IndividualEntrepreneur.user_id == user_id).gino.first()
+
+        # Проверяем, существует ли пользователь
+        if user:
+            # Возвращаем статус SMS
+            return user.sms_status
+        else:
+            logger.warning(f"Пользователь с ID {user_id} не найден. Невозможно получить статус SMS.")
+            return None  # or raise an exception if you prefer
+    except Exception as e:
+        logger.exception(f'Ошибка при получении статуса SMS пользователя: {e}')
+        return None  # or raise an exception if you prefer
+
+
+async def change_last_time(user_id: int, last_time_new: str):
+    try:
+        user = await select_user(user_id)
+        await user.update(last_time=last_time_new).apply()
+    except Exception as e:
+        logger.exception(f'Ошибка при изменении last_time пользователя: {e}')
+
+
+async def get_last_time(user_id: int):
+    try:
+        user = await select_user(user_id)
+        if user:
+            return user.last_time
+        else:
+            logger.warning(f"Пользователь с ID {user_id} не найден. Невозможно получить last_time.")
+            return None  # or raise an exception if you prefer
+    except Exception as e:
+        logger.exception(f'Ошибка при получении last_time пользователя: {e}')
+        return None  # or raise an exception if you prefer
 

@@ -2,7 +2,6 @@ from aiogram import Dispatcher
 from .by_balance import PositiveBalance
 from .private_chat import IsPrivate
 from .groups_chat import IsGroup
-from .has_mashine import HasMachines
 
 
 # функция, которая выполняет установку кастомных фильтов

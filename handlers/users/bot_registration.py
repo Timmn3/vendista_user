@@ -1,173 +1,109 @@
-""" регистрация нового автомата """
+""" Регистрация нового автомата """
 
-import datetime
 import re
-
 from aiogram import types
 from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters import Command
-
-from data.config import admins
 from filters import IsPrivate
-from keyboards.default import cancel_registration, kb_run_stop, kb_restart
+from handlers.users.my_qrcode import send_qr_code
+from keyboards.default import cancel_registration, kb_sms
 from loader import dp
-from message.send_mess import send_mess
 from parser.verification import main_authorize
 from states import Registration
-from utils.db_api.ie_commands import update_user, update_machines, get_user_email, get_tg_first_name, users_count
+from utils.db_api.ie_commands import change_email_and_password, get_sms_status_ie
+from utils.db_api.users_commands import update_card_number, update_phone_number, update_sms_status, get_number_ie
+from utils.notify_admins import send_admins, new_user_registration
 
 
-@dp.message_handler(text='Отменить регистрацию', state=[Registration.email, Registration.password,
-                                                        Registration.number_machines, Registration.name_machines,
-                                                        Registration.time_update, Registration.report_time])
+@dp.message_handler(text='Отменить регистрацию')
 async def cast(message: types.Message, state: FSMContext):
     await state.finish()
-    await message.answer('Регистрация отменена')
+    await message.answer('Отменено')
 
 
-@dp.message_handler(IsPrivate(), Command('register'))
+@dp.message_handler(text=['Регистрация', '/register'])
 async def register(message: types.Message):
-    email = await get_user_email(message.from_user.id)
-    if email:
-        await message.answer('Введите номер автомата (пример: 40953):', reply_markup=cancel_registration)
-        await Registration.number_machines.set()
+    await message.answer('Для понимания какой картой Вы оплачиваете кофе, введите первые две цифры своей карты, потом '
+                         '4 звездочки и последние четыре цифры карты, \nнапример: 22****7192')
+    await message.answer('Номер карты:', reply_markup=cancel_registration)
+    await Registration.number.set()
+
+
+@dp.message_handler(state=Registration.number)
+async def get_number(message: types.Message, state: FSMContext):
+    number = message.text
+    if number == "Отменить регистрацию":
+        await state.finish()
+        await message.answer('Отменено')
     else:
-        await message.answer('Введите данные для доступа к сайту https://my.telemetron.net/\n'
-                             'email:', reply_markup=cancel_registration)
-        await Registration.email.set()
+        user_id = int(message.from_user.id)
+
+        if number == 'Отменить регистрацию':
+            await state.finish()
+            await message.answer('Отменено')
+        elif validate_number(number):
+            # сохраняем номер карты в БД
+            await update_card_number(user_id, number)
+            await state.finish()
+
+            user_id_ie = await get_number_ie(message.from_user.id)
+            # смотрим подключена ли СМС уведомление в кофейне
+            if await get_sms_status_ie(user_id_ie):
+                await message.answer('👍Отлично!')
+                await message.answer('Хотите получать СМС уведомления?', reply_markup=kb_sms)
+            else:
+                await message.answer('👍Отлично! Регистрация завершена, теперь вы будете получать уведомления о балансе '
+                                     'бонусов в telegram боте!📲')
+                # отправляем админам нового пользователя
+                await new_user_registration(dp=dp, username=message.from_user.username)
+
+        else:
+            await message.answer('Некорректный ввод. Пример: 22****7192:',
+                                 reply_markup=cancel_registration)
 
 
-@dp.message_handler(text='Регистрация нового автомата')
+def validate_number(number):
+    pattern = r'^\d{2}\*\*\*\*\d{4}$'
+    return re.match(pattern, number) is not None
+
+
+@dp.message_handler(text='да')
 async def register(message: types.Message):
-    email = await get_user_email(message.from_user.id)
-    if email:
-        await message.answer('Введите номер автомата (пример: 40953):', reply_markup=cancel_registration)
-        await Registration.number_machines.set()
-    else:
-        await message.answer('Введите данные для доступа к сайту https://my.telemetron.net/\n')
-        await message.answer('email:', reply_markup=cancel_registration)
-        await Registration.email.set()
+    await message.answer('На какой номер Вы хотели бы получать СМС уведомления?')
+    await message.answer('Введите номер телефона в формате 89886654411:', reply_markup=cancel_registration)
+    await Registration.phone.set()
 
 
-@dp.message_handler(IsPrivate(), state=Registration.email)
-async def get_email(message: types.Message, state: FSMContext):
-    email = message.text
-    if validate_email(email):  # Проверяем введенный email
-        await state.update_data(email=email)
-
-        await message.answer('пароль:', reply_markup=cancel_registration)
-        await Registration.password.set()
-    else:
-        await message.answer('Некорректный email. Пожалуйста, повторите ввод email:',
-                             reply_markup=cancel_registration)
-
-
-def validate_email(email):
-    pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
-    return re.match(pattern, email) is not None
-
-
-@dp.message_handler(IsPrivate(), state=Registration.password)
-async def get_password(message: types.Message, state: FSMContext):
-    # Сохранение пароля в состояние
-    await state.update_data(password=message.text)
-
-    # Проверка пароля
-    data = await state.get_data()
-    email = data.get('email')
-    password = data.get('password')
-
-    if await main_authorize(email, password):
-        await message.answer('Введите номер автомата (пример: 40953):',
-                             reply_markup=cancel_registration)
-        await Registration.number_machines.set()
-
-    else:
-        await message.answer('Неверный пароль. Пожалуйста, повторите ввод пароля:',
-                             reply_markup=cancel_registration)
-
-
-@dp.message_handler(IsPrivate(), state=Registration.number_machines)
-async def get_number_machine(message: types.Message, state: FSMContext):
-    number_machine = message.text
-    if number_machine.isdigit():  # Проверяем, содержит ли номер автомата только цифры
-        await state.update_data(number_machine=number_machine)
-
-        await message.answer('Введите название автомата (или локацию) для уведомлений в telegram:',
-                             reply_markup=cancel_registration)
-        await Registration.name_machines.set()
-    else:
-        await message.answer('Некорректный номер автомата. Пожалуйста, введите только цифры:',
-                             reply_markup=cancel_registration)
-
-
-@dp.message_handler(IsPrivate(), state=Registration.name_machines)
-async def get_time_update(message: types.Message, state: FSMContext):
-    name_machine = message.text
-    if not name_machine.strip():  # Проверяем, является ли название автомата пустым или состоящим только из пробелов
-        await message.answer('Название автомата не может быть пустым. Пожалуйста, введите название автомата:',
-                             reply_markup=cancel_registration)
-        return
-
-    # Сохранение времени обновления в состояние
-    await state.update_data(name_machine=name_machine)
-
-    email = await get_user_email(message.from_user.id)
-    if email:
-        # Получение всех данных из состояния
-        user_data = await state.get_data()
-
-        # Сохранение данных в базу данных
-        await update_machines(
-            user_id=message.from_user.id,
-            number_machines=user_data['number_machine'],
-            name_machines=user_data['name_machine']
-        )
-
-        # Сброс состояния
+@dp.message_handler(state=Registration.phone)
+async def get_phone(message: types.Message, state: FSMContext):
+    phone = message.text
+    if phone == "Отменить регистрацию":
         await state.finish()
-
-        await message.answer('Регистрация нового автомата успешно завершена!\n'
-                             'Чтобы изменения вступили в силу, выполните restart',
-                             reply_markup=kb_restart)
+        await message.answer('Отменено')
     else:
-        await message.answer('Введите время отчета, (пример 22:00)',
-                             reply_markup=cancel_registration)
-        await Registration.report_time.set()
+        user_id = int(message.from_user.id)
+        if validate_phone(phone):
+            # сохраняем номер карты в БД
+            await update_phone_number(user_id, phone)
+            await update_sms_status(user_id, True)
+            await message.answer('Отлично! Теперь Вы будете получать уведомления в telegram и по СМС\n'
+                                 'Если вы не хотите получать СМС, в меню выберите пункт "СМС уведомления"')
+            # отправляем админам нового пользователя
+            await new_user_registration(dp=dp, username=message.from_user.username)
+            await state.finish()
+        else:
+            await message.answer('Некорректный ввод. Пример: 89886654411:',
+                                 reply_markup=cancel_registration)
 
 
-@dp.message_handler(IsPrivate(), state=Registration.report_time)
-async def get_report_time(message: types.Message, state: FSMContext):
-    report_time = message.text
-    try:
-        datetime.datetime.strptime(report_time, '%H:%M')  # Проверяем, соответствует ли время формату HH:MM
-        await state.update_data(report_time=report_time)
+def validate_phone(phone):
+    pattern = r'^89\d{9}$'
+    return re.match(pattern, phone) is not None
 
-        # Получение всех данных из состояния
-        user_data = await state.get_data()
 
-        # Сохранение данных в базу данных
-        await update_user(
-            user_id=message.from_user.id,
-            email=user_data['email'],
-            password=user_data['password'],
-            number_machines=user_data['number_machine'],
-            name_machines=user_data['name_machine'],
-            report_time=user_data['report_time']
-        )
-
-        # Сброс состояния
-        await state.finish()
-
-        await message.answer('Регистрация успешно завершена! \n'
-                             '<b>Для запуска бота, нажмите кнопку RUN</b>',
-                             reply_markup=kb_run_stop)
-
-        name = await get_tg_first_name(message.from_user.id)
-
-        await send_mess(f'<b>Зарегистрирован новый пользователь: {name}\n'
-                        f'Всего пользователей: {await users_count()}</b>', admins)
-
-    except ValueError:
-        await message.answer('Некорректный формат времени. Пожалуйста, введите время в формате HH:MM:',
-                             reply_markup=cancel_registration)
+@dp.message_handler(text='нет')
+async def register(message: types.Message, state: FSMContext):
+    await message.answer('👍Отлично! Регистрация завершена, теперь вы будете получать уведомления о балансе '
+                         'бонусов в telegram боте!📲')
+    # отправляем админам нового пользователя
+    await new_user_registration(dp=dp, username=message.from_user.username)
+    await state.finish()

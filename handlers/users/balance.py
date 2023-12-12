@@ -6,7 +6,6 @@ from aiogram.dispatcher.filters import Command
 from aiogram.types import CallbackQuery
 
 from data.config import admins
-from filters import HasMachines
 from keyboards.inline import ikb_balance, ikb_replenish_the_balance
 from keyboards.inline.ikb_balance import ikb_check_payment
 from loader import dp
@@ -17,7 +16,7 @@ from utils.db_api.ie_commands import change_bill_id, user_bill_id, clear_bill_id
 from utils.misc.qiwi import payment, payment_verification, cancel_payment, amount_of_payment
 from loguru import logger
 
-@dp.message_handler(HasMachines(), Command('balance'))  # по команде /balance выводит баланс
+@dp.message_handler(Command('balance'))  # по команде /balance выводит баланс
 async def show_balance(message: types.Message):
     try:
         balance = await commands.user_balance(int(message.from_user.id))
@@ -133,7 +132,7 @@ async def send_message(call: CallbackQuery):
             await call.message.answer(f'Ваш баланс: {balance} ₽')
             await clear_bill_id(user_id)  # очищаем идентификатор заказа в БД
         else:
-            await call.message.answer(f'Попробуйте оплатить снова, после нажмите проверить:',
+            await call.message.answer('Попробуйте оплатить снова, после нажмите проверить:',
                                       reply_markup=ikb_check_payment)
     except Exception as e:
         logger.exception(f'Ошибка при обработке нажатия на кнопку "проверить": {e}')

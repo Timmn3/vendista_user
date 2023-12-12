@@ -3,7 +3,7 @@ from aiogram.dispatcher.filters import BoundFilter
 from data.config import admins
 
 
-class Admins_message(BoundFilter):  # проверка подписки
+class Admins(BoundFilter):  # проверка админа
     async def check(self, message: types.Message):
         # id пользователя
         user = int(message.from_user.id)

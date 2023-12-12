@@ -3,7 +3,7 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 kb_register_machine = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text="Регистрация нового автомата"),
+            KeyboardButton(text="Регистрация"),
         ],
 
     ],
