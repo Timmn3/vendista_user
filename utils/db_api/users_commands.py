@@ -175,10 +175,8 @@ async def get_bonus(user_id: int):
 
 async def count_users():
     try:
-        # Используем асинхронный метод count для подсчета пользователей
-        user_count = await Users.query.gino.count().gino.scalar()
-
-        return user_count
+        count = await db.func.count(Users.user_id).gino.scalar()
+        return count
     except Exception as e:
         logger.exception(f'Ошибка при подсчете пользователей: {e}')
         return None
