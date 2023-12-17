@@ -117,7 +117,7 @@ class AsyncLoginSessionManager:
                                 user = await get_user_id_by_card_number(card_number)
                                 if user:
                                     # отправляем сообщение пользователю
-                                    await bot.send_message(user, f'бонусы 💳: {bonus_balance}')
+                                    await bot.send_message(user, f'бонусы 💳{card_number}: {bonus_balance}')
                                     # сохраняем количество бонусов в БД
                                     bonus = await parse_amount_string(bonus_balance)
                                     await update_bonus(user, bonus)

@@ -10,7 +10,8 @@ from loader import dp
 from parser.verification import main_authorize
 from states import Registration
 from utils.db_api.ie_commands import change_email_and_password, get_sms_status_ie
-from utils.db_api.users_commands import update_card_number, update_phone_number, update_sms_status, get_number_ie
+from utils.db_api.users_commands import update_card_number, update_phone_number, update_sms_status, get_number_ie, \
+    get_user_id_by_card_number, get_card_number_by_user_id
 from utils.notify_admins import send_admins, new_user_registration
 
 
@@ -22,10 +23,16 @@ async def cast(message: types.Message, state: FSMContext):
 
 @dp.message_handler(text=['Регистрация', '/register'])
 async def register(message: types.Message):
-    await message.answer('Для понимания какой картой Вы оплачиваете кофе, введите первые две цифры своей карты, потом '
-                         '4 звездочки и последние четыре цифры карты, \nнапример: 22****7192')
-    await message.answer('Номер карты:', reply_markup=cancel_registration)
-    await Registration.number.set()
+    user_id = int(message.from_user.id)
+    cards = await get_card_number_by_user_id(user_id)
+    if cards == '0':
+        await message.answer('Для понимания какой картой Вы оплачиваете кофе, введите первые две цифры своей карты, '
+                             'потом 4 звездочки и последние четыре цифры карты, \nнапример: 22****7192')
+        await message.answer('Номер карты:', reply_markup=cancel_registration)
+        await Registration.number.set()
+    else:
+        await message.answer(f'Вы зарегистрированы!\nВаши карты: \n{cards}\n'
+                             f'Если Вы хотите добавить или удалить карту выберите в меню пункт /cards')
 
 
 @dp.message_handler(state=Registration.number)
@@ -37,10 +44,7 @@ async def get_number(message: types.Message, state: FSMContext):
     else:
         user_id = int(message.from_user.id)
 
-        if number == 'Отменить регистрацию':
-            await state.finish()
-            await message.answer('Отменено')
-        elif validate_number(number):
+        if validate_number(number):
             # сохраняем номер карты в БД
             await update_card_number(user_id, number)
             await state.finish()
@@ -51,14 +55,14 @@ async def get_number(message: types.Message, state: FSMContext):
                 await message.answer('👍Отлично!')
                 await message.answer('Хотите получать СМС уведомления?', reply_markup=kb_sms)
             else:
-                await message.answer('👍Отлично! Регистрация завершена, теперь вы будете получать уведомления о балансе '
-                                     'бонусов в telegram боте!📲')
+                await message.answer(
+                    '👍Отлично! Регистрация завершена, теперь вы будете получать уведомления о балансе '
+                    'бонусов в telegram боте!📲')
                 # отправляем админам нового пользователя
                 await new_user_registration(dp=dp, username=message.from_user.username)
 
         else:
-            await message.answer('Некорректный ввод. Пример: 22****7192:',
-                                 reply_markup=cancel_registration)
+            await message.answer('Некорректный ввод. Пример: 22****7192:', reply_markup=cancel_registration)
 
 
 def validate_number(number):

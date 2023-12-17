@@ -10,12 +10,20 @@ from utils.db_api import ie_commands as commands
 from states import bot_mailing
 
 from data.config import admins
+from utils.db_api.users_commands import count_users, get_user_id_by_card_number
+
+
+@dp.message_handler(IsPrivate(), text='/test', chat_id=admins)
+async def start_mailing(message: types.Message):
+    await message.answer(f'test')
+    print(await get_user_id_by_card_number('22****7194'))
 
 
 @dp.message_handler(IsPrivate(), text='/mailing', chat_id=admins)
 async def start_mailing(message: types.Message):
     await message.answer(f'Введите текст рассылки:')
     await bot_mailing.text.set()
+
 
 @dp.message_handler(IsPrivate(), state=bot_mailing.text, chat_id=admins)
 async def mailing_text(message: types.Message, state: FSMContext):
@@ -48,11 +56,11 @@ async def start(call: types.CallbackQuery, state: FSMContext):
     await call.message.answer('Рассылка выполнена')
 
 
-
 @dp.callback_query_handler(text='add_foto', state=bot_mailing.state, chat_id=admins)
 async def add_foto(call: types.CallbackQuery):
     await call.message.answer('Пришлите фото')
     await bot_mailing.photo.set()
+
 
 @dp.message_handler(IsPrivate(), state=bot_mailing.photo, content_types=types.ContentType.PHOTO, chat_id=admins)
 async def mailing_text(message: types.Message, state: FSMContext):
@@ -85,6 +93,7 @@ async def start(call: types.CallbackQuery, state: FSMContext):
         except Exception:
             pass
     await call.message.answer('Рассылка выполнена')
+
 
 @dp.message_handler(IsPrivate(), state=bot_mailing.photo, chat_id=admins)
 async def no_photo(message: types.Message):

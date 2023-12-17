@@ -29,9 +29,19 @@ async def update_card_number(user_id: int, new_card_number: str):
     """ Изменить номер карты пользователя """
     try:
         # Проверяем, существует ли пользователь
-        if await Users.query.where(Users.user_id == user_id).gino.first():
-            # Если пользователь существует, обновляем номер карты
-            await Users.update.values(card_number=new_card_number).where(Users.user_id == user_id).gino.status()
+        user = await Users.query.where(Users.user_id == user_id).gino.first()
+        if user:
+            # Получаем текущий номер карты
+            current_card_number = user.card_number
+            # Если текущий номер равен "0", заменяем его новым номером
+            if current_card_number == "0":
+                current_card_number = new_card_number
+            else:
+                # Иначе, добавляем новый номер с новой строки
+                current_card_number = f"{current_card_number}\n{new_card_number}"
+
+            # Обновляем номер карты
+            await Users.update.values(card_number=current_card_number).where(Users.user_id == user_id).gino.status()
         else:
             logger.warning(f"Пользователь с ID {user_id} не найден. Невозможно обновить номер карты.")
     except Exception as e:
@@ -124,17 +134,18 @@ async def get_number_ie(user_id: int):
         return None  # or raise an exception if you prefer
 
 
-async def get_user_id_by_card_number(card_number: str):
+async def get_user_id_by_card_number(card: str):
     """ Получить user_id по номеру карты """
     try:
-        # Выбираем пользователя по номеру карты
-        user = await Users.query.where(Users.card_number == card_number).gino.first()
+        # Ищем пользователя по номеру карты
+        user = await Users.query.where(Users.card_number.contains(card)).gino.first()
 
         # Проверяем, существует ли пользователь
         if user:
             # Возвращаем user_id
             return user.user_id
         else:
+            logger.warning(f"Пользователь с номером карты {card} не найден. Невозможно получить user_id.")
             return None  # or raise an exception if you prefer
     except Exception as e:
         logger.exception(f'Ошибка при получении user_id по номеру карты: {e}')
@@ -180,3 +191,54 @@ async def count_users():
     except Exception as e:
         logger.exception(f'Ошибка при подсчете пользователей: {e}')
         return None
+
+
+async def get_card_number_by_user_id(user_id: int):
+    """ Получить номер карты по user_id """
+    try:
+        # Выбираем пользователя
+        user = await Users.query.where(Users.user_id == user_id).gino.first()
+
+        # Проверяем, существует ли пользователь
+        if user:
+            # Возвращаем номер карты
+            return user.card_number
+        else:
+            logger.warning(f"Пользователь с ID {user_id} не найден. Невозможно получить номер карты.")
+            return None  # or raise an exception if you prefer
+    except Exception as e:
+        logger.exception(f'Ошибка при получении номера карты по user_id: {e}')
+        return None  # or raise an exception if you prefer
+
+
+async def remove_card_number(user_id: int, partial_card_number: str):
+    """ Удалить номер карты по частичному номеру """
+    try:
+        # Выбираем пользователя
+        user = await Users.query.where(Users.user_id == user_id).gino.first()
+
+        # Проверяем, существует ли пользователь
+        if user:
+            # Получаем текущий номер карты
+            current_card_number = user.card_number
+
+            # Проверяем, содержится ли указанный частичный номер в текущем номере карты
+            if partial_card_number in current_card_number:
+                # Удаляем указанный частичный номер из текущего номера карты
+                updated_card_number = "\n".join(
+                    line for line in current_card_number.split("\n") if partial_card_number not in line)
+
+                # Обновляем номер карты
+                await Users.update.values(card_number=updated_card_number).where(Users.user_id == user_id).gino.status()
+
+                info = f"Частичный номер карты {partial_card_number} успешно удален у пользователя с ID {user_id}."
+            else:
+                info = f"Частичный номер карты {partial_card_number} не найден у пользователя с ID {user_id}."
+
+            return info
+        else:
+            logger.warning(f"Пользователь с ID {user_id} не найден. Невозможно удалить частичный номер карты.")
+            return f"Пользователь с ID {user_id} не найден."
+    except Exception as e:
+        logger.exception(f'Ошибка при удалении частичного номера карты: {e}')
+        return f'Ошибка при удалении частичного номера карты: {e}'
