@@ -145,7 +145,7 @@ async def get_user_id_by_card_number(card: str):
             # Возвращаем user_id
             return user.user_id
         else:
-            logger.warning(f"Пользователь с номером карты {card} не найден. Невозможно получить user_id.")
+            # logger.warning(f"Пользователь с номером карты {card} не найден. Невозможно получить user_id.")
             return None  # or raise an exception if you prefer
     except Exception as e:
         logger.exception(f'Ошибка при получении user_id по номеру карты: {e}')

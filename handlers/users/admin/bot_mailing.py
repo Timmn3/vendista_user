@@ -1,30 +1,30 @@
 from asyncio import sleep
 from aiogram import types
 from aiogram.dispatcher import FSMContext
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from filters import IsPrivate
 from loader import dp
 from utils.db_api import ie_commands as commands
 from states import bot_mailing
 
-from data.config import admins
+from data.config import ADMIN_IE
 from utils.db_api.users_commands import get_user_id_by_card_number
 
 
-@dp.message_handler(IsPrivate(), text='/test', chat_id=admins)
+@dp.message_handler(IsPrivate(), text='/test', chat_id=ADMIN_IE)
 async def start_mailing(message: types.Message):
     await message.answer(f'test')
     print(await get_user_id_by_card_number('22****7194'))
 
 
-@dp.message_handler(IsPrivate(), text='/mailing', chat_id=admins)
+@dp.message_handler(IsPrivate(), text='/mailing', chat_id=ADMIN_IE)
 async def start_mailing(message: types.Message):
     await message.answer(f'Введите текст рассылки:')
     await bot_mailing.text.set()
 
 
-@dp.message_handler(IsPrivate(), state=bot_mailing.text, chat_id=admins)
+@dp.message_handler(IsPrivate(), state=bot_mailing.text, chat_id=ADMIN_IE)
 async def mailing_text(message: types.Message, state: FSMContext):
     answer = message.text
     murkup = InlineKeyboardMarkup(row_width=2,
@@ -40,7 +40,7 @@ async def mailing_text(message: types.Message, state: FSMContext):
     await bot_mailing.state.set()
 
 
-@dp.callback_query_handler(text='next', state=bot_mailing.state, chat_id=admins)
+@dp.callback_query_handler(text='next', state=bot_mailing.state, chat_id=ADMIN_IE)
 async def start(call: types.CallbackQuery, state: FSMContext):
     users = await commands.get_all_user_ids()
     data = await state.get_data()  # создаем переменную data из которой достаем ответы пользователя
@@ -56,13 +56,13 @@ async def start(call: types.CallbackQuery, state: FSMContext):
     await call.message.answer('Рассылка выполнена!')
 
 
-@dp.callback_query_handler(text='add_foto', state=bot_mailing.state, chat_id=admins)
+@dp.callback_query_handler(text='add_foto', state=bot_mailing.state, chat_id=ADMIN_IE)
 async def add_foto(call: types.CallbackQuery):
     await call.message.answer('Пришлите фото')
     await bot_mailing.photo.set()
 
 
-@dp.message_handler(IsPrivate(), state=bot_mailing.photo, content_types=types.ContentType.PHOTO, chat_id=admins)
+@dp.message_handler(IsPrivate(), state=bot_mailing.photo, content_types=types.ContentType.PHOTO, chat_id=ADMIN_IE)
 async def mailing_text(message: types.Message, state: FSMContext):
     photo_file_id = message.photo[-1].file_id
     await state.update_data(photo=photo_file_id)
@@ -79,7 +79,7 @@ async def mailing_text(message: types.Message, state: FSMContext):
     await message.answer_photo(photo=photo, caption=text, reply_markup=murkup)
 
 
-@dp.callback_query_handler(text='next', state=bot_mailing.photo, chat_id=admins)
+@dp.callback_query_handler(text='next', state=bot_mailing.photo, chat_id=ADMIN_IE)
 async def start(call: types.CallbackQuery, state: FSMContext):
     users = await commands.get_all_user_ids()
     data = await state.get_data()  # создаем переменную data из которой достаем ответы пользователя
@@ -96,7 +96,7 @@ async def start(call: types.CallbackQuery, state: FSMContext):
     await call.message.answer('Рассылка выполнена')
 
 
-@dp.message_handler(IsPrivate(), state=bot_mailing.photo, chat_id=admins)
+@dp.message_handler(IsPrivate(), state=bot_mailing.photo, chat_id=ADMIN_IE)
 async def no_photo(message: types.Message):
     murkup = InlineKeyboardMarkup(row_width=2,
                                   inline_keyboard=[
@@ -108,7 +108,7 @@ async def no_photo(message: types.Message):
     await message.answer('Пришли мне фотографию', reply_markup=murkup)
 
 
-@dp.callback_query_handler(text='quit', state=[bot_mailing.text, bot_mailing.photo, bot_mailing.state], chat_id=admins)
+@dp.callback_query_handler(text='quit', state=[bot_mailing.text, bot_mailing.photo, bot_mailing.state], chat_id=ADMIN_IE)
 async def quit(call: types.CallbackQuery, state: FSMContext):
     await state.finish()
     await call.message.delete()
