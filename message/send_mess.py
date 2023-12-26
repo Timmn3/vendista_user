@@ -1,7 +1,8 @@
 from loader import dp
 from asyncio import sleep
 
-async def send_mess(text, users_id):
+
+async def send_mess_users(text, users_id):
     if isinstance(users_id, int):
         users_id = [users_id]  # Преобразование в список
     for user_id in users_id:

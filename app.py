@@ -1,3 +1,4 @@
+from handlers.users.admin.start_stop import restart_parser, run_parser
 from utils.db_api.ie_commands import reset_all_users_is_run
 import aiocron
 
@@ -34,9 +35,12 @@ async def on_startup(dp):
     # выдает в консоль бот запущен
     logger.info("Бот запущен")
 
+    # запускаем бота
+    # await run_parser()
+
     # Создаем задачу, которая будет выполняться каждый день в 00:00
     # перезапуск бота
-    # aiocron.crontab('1 0 * * *', func=restart_parser_for_all, start=True)  # в 00:01
+    # aiocron.crontab('1 0 * * *', func=restart_parser, start=True)  # в 00:01
 
 if __name__ == '__main__':
     from aiogram import executor  # импортируем executor для запуска поллинга

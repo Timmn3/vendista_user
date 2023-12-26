@@ -9,7 +9,7 @@ from data.config import admins
 from keyboards.inline import ikb_balance, ikb_replenish_the_balance
 from keyboards.inline.ikb_balance import ikb_check_payment
 from loader import dp
-from message.send_mess import send_mess
+from message.send_mess import send_mess_users
 from states import Balance
 from utils.db_api import ie_commands as commands
 from utils.db_api.ie_commands import change_bill_id, user_bill_id, clear_bill_id, change_balance
@@ -127,7 +127,7 @@ async def send_message(call: CallbackQuery):
             amount = await amount_of_payment(bill_id)  # проверяем сумму по запросу qiwi
             await change_balance(user_id, amount)  # заносим сумму в БД
             # отправляем администратору сообщение какой пользователь и на сколько пополнил баланс
-            await send_mess(f'{amount} ₽, пользователь {call.from_user.first_name}', admins)
+            await send_mess_users(f'{amount} ₽, пользователь {call.from_user.first_name}', admins)
             balance = await commands.user_balance(user_id)  # смотрим какая в БД сумма
             await call.message.answer(f'Ваш баланс: {balance} ₽')
             await clear_bill_id(user_id)  # очищаем идентификатор заказа в БД

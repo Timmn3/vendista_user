@@ -1,10 +1,11 @@
 from sqlalchemy import Column, BigInteger, String, sql, Float, Boolean
 
+from data.config import TABLE_NAME
 from utils.db_api.db_gino import TimedBaseModel
 
 
 class Users(TimedBaseModel):
-    __tablename__ = 'Users'
+    __tablename__ = TABLE_NAME
     user_id = Column(BigInteger, primary_key=True)
     tg_first_name = Column(String(250))
     tg_last_name = Column(String(250))

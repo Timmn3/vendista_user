@@ -75,7 +75,7 @@ async def is_running(user_id: int):
         logger.exception(f'Ошибка при получении состояния is_run пользователя: {e}')
 
 
-async def get_user_data(user_id):
+async def get_user_data_email_password_time(user_id):
     try:
         user = await select_user(user_id)
         if user:
@@ -121,7 +121,7 @@ async def get_user_password(user_id: int):
         return None  # or raise an exception if you prefer
 
 
-async def get_users_data():
+async def get_users_data_all():
     try:
         users_data = []
         users = await IndividualEntrepreneur.query.where(IndividualEntrepreneur.is_run == True).gino.all()
@@ -129,7 +129,7 @@ async def get_users_data():
         for user in users:
             user_data = {
                 'user_id': user.user_id,
-                'login': user.email,  # Используйте соответствующее поле для логина
+                'login': user.email,
                 'password': user.password,
             }
             users_data.append(user_data)
@@ -140,6 +140,28 @@ async def get_users_data():
         return None
 
 
+async def get_user_data(user_id):
+    try:
+        user = await IndividualEntrepreneur.query.where(
+            (IndividualEntrepreneur.user_id == user_id) &
+            (IndividualEntrepreneur.is_run == True)
+        ).gino.first()
+
+        if user:
+            user_data = {
+                'user_id': user.user_id,
+                'login': user.email,
+                'password': user.password,
+            }
+            return [user_data]
+        else:
+            logger.warning(f'Пользователь с user_id {user_id} не найден или неактивен.')
+            return None
+    except Exception as e:
+        logger.exception(f'Ошибка при получении данных пользователя с user_id {user_id}: {e}')
+        return None
+
+
 async def count_ie():
     try:
         count = await db.func.count(IndividualEntrepreneur.user_id).gino.scalar()
@@ -147,6 +169,7 @@ async def count_ie():
     except Exception as e:
         logger.exception(f'Ошибка при подсчете пользователей: {e}')
         return None
+
 
 async def change_user_password(user_id: int, new_password: str):
     try:

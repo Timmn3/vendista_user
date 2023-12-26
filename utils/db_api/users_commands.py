@@ -127,8 +127,8 @@ async def get_number_ie(user_id: int):
             # Возвращаем значение number_ie
             return user.number_ie
         else:
-            logger.warning(f"Пользователь с ID {user_id} не найден. Невозможно получить значение number_ie.")
-            return None  # or raise an exception if you prefer
+            # logger.warning(f"Пользователь с ID {user_id} не найден. Невозможно получить значение number_ie.")
+            return None
     except Exception as e:
         logger.exception(f'Ошибка при получении значения number_ie для пользователя: {e}')
         return None  # or raise an exception if you prefer

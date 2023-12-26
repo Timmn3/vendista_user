@@ -99,7 +99,7 @@ class AsyncLoginSessionManager:
                     date_str_now = str(await current_time_formatted())
                     # время из БД последнего запроса
                     date_str_bd = await get_last_time(int(user_id))
-                    # date_str_bd = '11.12.2023 20:00:00'
+                    date_str_bd = '11.12.2023 20:00:00'
 
                     for row in rows:
                         columns = row.select('.catalog__table_td')
@@ -111,8 +111,6 @@ class AsyncLoginSessionManager:
 
                             # сравниваем время последнего обновления со временем последней покупки
                             if await compare_dates(sale_time, date_str_bd):
-                                # print(f"User ID: {user_id}, Card Number: {card_number}, Balance: {bonus_balance}, "
-                                #       f"Last Sale Time: {sale_time}")
                                 # смотрим у какого пользователя совпадает номер карты
                                 user = await get_user_id_by_card_number(card_number)
                                 if user:
@@ -124,10 +122,9 @@ class AsyncLoginSessionManager:
 
                     # сохраняем текущее время в БД
                     await change_last_time(user_id, date_str_now)
-                await asyncio.sleep(60)
-                # print("time")
+                await asyncio.sleep(5)
         except Exception as e:
-            print(f'Ошибка извлечения бонусных данных для User ID {user_id}!', e)
+            logger.error(f'Ошибка извлечения бонусных данных для User ID {user_id}!', e)
 
     @classmethod
     def get_instance(cls):

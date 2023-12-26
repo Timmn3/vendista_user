@@ -1,8 +1,7 @@
 from asyncio import sleep
-
 from aiogram import types
 from aiogram.dispatcher import FSMContext
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
 
 from filters import IsPrivate
 from loader import dp
@@ -10,7 +9,7 @@ from utils.db_api import ie_commands as commands
 from states import bot_mailing
 
 from data.config import admins
-from utils.db_api.users_commands import count_users, get_user_id_by_card_number
+from utils.db_api.users_commands import get_user_id_by_card_number
 
 
 @dp.message_handler(IsPrivate(), text='/test', chat_id=admins)
@@ -31,8 +30,8 @@ async def mailing_text(message: types.Message, state: FSMContext):
     murkup = InlineKeyboardMarkup(row_width=2,
                                   inline_keyboard=[
                                       [
-                                          InlineKeyboardButton(text='Добавить фотографию', callback_data='add_foto'),
-                                          InlineKeyboardButton(text='Далее', callback_data='next'),
+                                          InlineKeyboardButton(text='Добавить фото', callback_data='add_foto'),
+                                          InlineKeyboardButton(text='Отправить', callback_data='next'),
                                           InlineKeyboardButton(text='Отменить', callback_data='quit')
                                       ]
                                   ])
@@ -43,17 +42,18 @@ async def mailing_text(message: types.Message, state: FSMContext):
 
 @dp.callback_query_handler(text='next', state=bot_mailing.state, chat_id=admins)
 async def start(call: types.CallbackQuery, state: FSMContext):
-    users = await commands.select_all_users()
+    users = await commands.get_all_user_ids()
     data = await state.get_data()  # создаем переменную data из которой достаем ответы пользователя
     text = data.get('text')
     await state.finish()
+    await call.message.delete()
     for user in users:
         try:
-            await dp.bot.send_message(chat_id=user.user_id, text=text)
+            await dp.bot.send_message(chat_id=user, text=text)
             await sleep(0.25)  # 4 сообщения в секунду
         except Exception:
             pass
-    await call.message.answer('Рассылка выполнена')
+    await call.message.answer('Рассылка выполнена!')
 
 
 @dp.callback_query_handler(text='add_foto', state=bot_mailing.state, chat_id=admins)
@@ -72,7 +72,7 @@ async def mailing_text(message: types.Message, state: FSMContext):
     murkup = InlineKeyboardMarkup(row_width=2,
                                   inline_keyboard=[
                                       [
-                                          InlineKeyboardButton(text='Далее', callback_data='next'),
+                                          InlineKeyboardButton(text='Отправить', callback_data='next'),
                                           InlineKeyboardButton(text='Отменить', callback_data='quit')
                                       ]
                                   ])
@@ -81,14 +81,15 @@ async def mailing_text(message: types.Message, state: FSMContext):
 
 @dp.callback_query_handler(text='next', state=bot_mailing.photo, chat_id=admins)
 async def start(call: types.CallbackQuery, state: FSMContext):
-    users = await commands.select_all_users()
+    users = await commands.get_all_user_ids()
     data = await state.get_data()  # создаем переменную data из которой достаем ответы пользователя
     text = data.get('text')
     photo = data.get('photo')
     await state.finish()
+    await call.message.delete()
     for user in users:
         try:
-            await dp.bot.send_photo(chat_id=user.user_id, photo=photo, caption=text)
+            await dp.bot.send_photo(chat_id=user, photo=photo, caption=text)
             await sleep(0.25)  # 4 сообщения в секунду
         except Exception:
             pass
@@ -110,4 +111,5 @@ async def no_photo(message: types.Message):
 @dp.callback_query_handler(text='quit', state=[bot_mailing.text, bot_mailing.photo, bot_mailing.state], chat_id=admins)
 async def quit(call: types.CallbackQuery, state: FSMContext):
     await state.finish()
+    await call.message.delete()
     await call.message.answer('Рассылка отменена')
