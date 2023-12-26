@@ -127,7 +127,7 @@ class AsyncLoginSessionManager:
                 await asyncio.sleep(60)
                 # print("time")
         except Exception as e:
-            logger.error(f'Ошибка извлечения бонусных данных для User ID {user_id}!', e)
+            print(f'Ошибка извлечения бонусных данных для User ID {user_id}!', e)
 
     @classmethod
     def get_instance(cls):

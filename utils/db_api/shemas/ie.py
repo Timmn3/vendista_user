@@ -21,5 +21,7 @@ class IndividualEntrepreneur(TimedBaseModel):
     bill_id = Column(String(200))
     report_time = Column(String(100))
     report_state = Column(Boolean)
+    bot_name = Column(String(100))
+    token = Column(String(100))
 
     query: sql.select

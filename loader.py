@@ -14,4 +14,3 @@ storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
 __all__ = ['bot', 'storage', 'dp', 'db']
-

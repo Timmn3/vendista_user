@@ -7,13 +7,13 @@ from utils.db_api.shemas.ie import IndividualEntrepreneur
 
 async def add_ie(user_id: int, tg_first_name: str, tg_last_name: str, name: str, email: str, password: str,
                  time_update: int, last_time: str, status: str, is_run: bool, balance: float, number_ie: int,
-                 sms_status: bool, bill_id: str, report_time: str, report_state: bool):
+                 sms_status: bool, bill_id: str, report_time: str, report_state: bool, bot_name: str, token: str):
     try:
         ie = IndividualEntrepreneur(user_id=user_id, tg_first_name=tg_first_name, tg_last_name=tg_last_name,
                                     name=name, email=email, password=password, time_update=time_update,
                                     last_time=last_time, status=status, is_run=is_run, balance=balance,
                                     number_ie=number_ie, sms_status=sms_status, bill_id=bill_id,
-                                    report_time=report_time, report_state=report_state)
+                                    report_time=report_time, report_state=report_state, bot_name=bot_name, token=token)
         await ie.create()
     except UniqueViolationError:
         logger.exception('Ошибка при добавлении ИП')
