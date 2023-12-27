@@ -35,9 +35,6 @@ async def on_startup(dp):
     # выдает в консоль бот запущен
     logger.info("Бот запущен")
 
-    # запускаем бота
-    # await run_parser()
-
     # Создаем задачу, которая будет выполняться каждый день в 00:00
     # перезапуск бота
     # aiocron.crontab('1 0 * * *', func=restart_parser, start=True)  # в 00:01

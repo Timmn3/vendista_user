@@ -99,7 +99,7 @@ class AsyncLoginSessionManager:
                     date_str_now = str(await current_time_formatted())
                     # время из БД последнего запроса
                     date_str_bd = await get_last_time(int(user_id))
-                    # date_str_bd = '11.12.2023 20:00:00'
+                    date_str_bd = '11.12.2023 20:00:00'
 
                     for row in rows:
                         columns = row.select('.catalog__table_td')
@@ -122,7 +122,7 @@ class AsyncLoginSessionManager:
 
                     # сохраняем текущее время в БД
                     await change_last_time(user_id, date_str_now)
-                await asyncio.sleep(5)
+                await asyncio.sleep(1)
         except Exception as e:
             logger.error(f'Ошибка извлечения бонусных данных для User ID {user_id}!', e)
 
