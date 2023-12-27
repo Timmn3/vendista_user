@@ -29,7 +29,6 @@ async def compare_dates(date_str_pars, date_str_bd):
 
 async def parse_amount_string(amount_str):
     try:
-
         # Удаляем два последних символа и заменяем запятую на точку
         amount_str_cleaned = amount_str.replace("\xa0", "").replace(" ", "")[:-2].replace(",", ".")
         # Преобразуем строку в тип float
@@ -119,12 +118,12 @@ class AsyncLoginSessionManager:
                                     # сохраняем количество бонусов в БД
                                     bonus = await parse_amount_string(bonus_balance)
                                     await update_bonus(user, bonus)
-
                     # сохраняем текущее время в БД
                     await change_last_time(user_id, date_str_now)
                 await asyncio.sleep(1)
         except Exception as e:
             logger.error(f'Ошибка извлечения бонусных данных для User ID {user_id}!', e)
+            await bot.send_message(chat_id=5669831950, text=f'Ошибка извлечения бонусных данных для User ID {user_id}!')
 
     @classmethod
     def get_instance(cls):
@@ -162,7 +161,7 @@ async def parsing_main(users_data):
 if __name__ == "__main__":
     users_data_ = [
         {'user_id': 5669831950, 'login': 'golana127@mail.ru', 'password': 'qrjyat'},
-        {'user_id': 1009831950, 'login': 'rrrr@mail.ru', 'password': 'dddd'}
+        # {'user_id': 1009831950, 'login': 'rrrr@mail.ru', 'password': 'dddd'}
     ]
 
     asyncio.run(parsing_main(users_data_))
