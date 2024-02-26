@@ -9,7 +9,7 @@ from utils.db_api import ie_commands as commands
 from states import bot_mailing
 
 from data.config import ADMIN_IE
-from utils.db_api.users_commands import get_user_id_by_card_number
+from utils.db_api.users_commands import get_user_id_by_card_number, get_all_user_ids
 
 
 @dp.message_handler(IsPrivate(), text='/test', chat_id=ADMIN_IE)
@@ -42,7 +42,7 @@ async def mailing_text(message: types.Message, state: FSMContext):
 
 @dp.callback_query_handler(text='next', state=bot_mailing.state, chat_id=ADMIN_IE)
 async def start(call: types.CallbackQuery, state: FSMContext):
-    users = await commands.get_all_user_ids()
+    users = await get_all_user_ids()
     data = await state.get_data()  # создаем переменную data из которой достаем ответы пользователя
     text = data.get('text')
     await state.finish()
@@ -81,7 +81,7 @@ async def mailing_text(message: types.Message, state: FSMContext):
 
 @dp.callback_query_handler(text='next', state=bot_mailing.photo, chat_id=ADMIN_IE)
 async def start(call: types.CallbackQuery, state: FSMContext):
-    users = await commands.get_all_user_ids()
+    users = await get_all_user_ids()
     data = await state.get_data()  # создаем переменную data из которой достаем ответы пользователя
     text = data.get('text')
     photo = data.get('photo')

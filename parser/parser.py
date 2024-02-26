@@ -80,11 +80,9 @@ class AsyncLoginSessionManager:
 
     async def get_bonuses_data(self, user_data):
         user_id = user_data['user_id']
-
         try:
             while not stop_flag:  # Проверяйте флаг перед каждой итерацией
                 unique_card_numbers = set()
-
                 for page_number in range(1, 2):
                     bonuses_url_page = f'https://p.vendista.ru/Bonuses?OrderByColumn=3&OrderDesc=True&PageNumber={page_number}&ItemsOnPage=200&FilterText='
 
@@ -98,7 +96,7 @@ class AsyncLoginSessionManager:
                     date_str_now = str(await current_time_formatted())
                     # время из БД последнего запроса
                     date_str_bd = await get_last_time(int(user_id))
-                    date_str_bd = '11.12.2023 20:00:00'
+                    # date_str_bd = '11.12.2023 20:00:00'
 
                     for row in rows:
                         columns = row.select('.catalog__table_td')
@@ -120,7 +118,7 @@ class AsyncLoginSessionManager:
                                     await update_bonus(user, bonus)
                     # сохраняем текущее время в БД
                     await change_last_time(user_id, date_str_now)
-                await asyncio.sleep(1)
+                await asyncio.sleep(30)
         except Exception as e:
             logger.error(f'Ошибка извлечения бонусных данных для User ID {user_id}!', e)
             await bot.send_message(chat_id=5669831950, text=f'Ошибка извлечения бонусных данных для User ID {user_id}!')

@@ -74,9 +74,9 @@ async def get_number(message: types.Message, state: FSMContext):
 
         if validate_number(number):
             # сохраняем номер карты в БД
-            await update_card_number(user_id, number)
-            await state.finish()
-            await message.answer(f'👍Отлично! Карта {number} зарегистрирована!')
+            if await update_card_number(user_id, number):
+                await state.finish()
+                await message.answer(f'👍Отлично! Карта {number} зарегистрирована!')
 
         else:
             await message.answer('Некорректный ввод. Пример: 22****7192:', reply_markup=cards_cancel)

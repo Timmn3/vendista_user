@@ -1,6 +1,7 @@
 from asyncpg import UniqueViolationError
 from loguru import logger
 
+from message.send_mess import send_mess_users
 from utils.db_api.db_gino import db
 from utils.db_api.shemas.users import Users
 
@@ -14,6 +15,16 @@ async def add_user(user_id: int, tg_first_name: str, tg_last_name: str, name: st
         await user.create()
     except UniqueViolationError:
         logger.exception('Ошибка при добавлении пользователя')
+
+
+async def get_all_user_ids():
+    """ Получение списка всех ID пользователей """
+    try:
+        user_ids = await db.select([Users.user_id]).gino.all()
+        return [user_id[0] for user_id in user_ids]
+    except Exception as e:
+        logger.exception(f'Ошибка получения всех user_ids: {e}')
+        return []
 
 
 async def select_user(user_id):
@@ -43,7 +54,9 @@ async def update_card_number(user_id: int, new_card_number: str):
             # Обновляем номер карты
             await Users.update.values(card_number=current_card_number).where(Users.user_id == user_id).gino.status()
         else:
-            logger.warning(f"Пользователь с ID {user_id} не найден. Невозможно обновить номер карты.")
+            await send_mess_users('Пожалуйста отсканируйте QR Code на кофеаппарате, и перейдите по сканированной '
+                                  'ссылке в telegram', user_id)
+            # logger.warning(f"Пользователь с ID {user_id} не найден. Невозможно обновить номер карты.")
     except Exception as e:
         logger.exception(f'Ошибка при изменении номера карты пользователя: {e}')
 
@@ -204,7 +217,9 @@ async def get_card_number_by_user_id(user_id: int):
             # Возвращаем номер карты
             return user.card_number
         else:
-            logger.warning(f"Пользователь с ID {user_id} не найден. Невозможно получить номер карты.")
+            await send_mess_users('Пожалуйста отсканируйте QR Code на кофеаппарате, и перейдите по сканированной '
+                                  'ссылке в telegram', user_id)
+            # logger.warning(f"Пользователь с ID {user_id} не найден. Невозможно получить номер карты.")
             return None  # or raise an exception if you prefer
     except Exception as e:
         logger.exception(f'Ошибка при получении номера карты по user_id: {e}')

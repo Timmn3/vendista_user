@@ -9,6 +9,7 @@ load_dotenv()
 BOT_TOKEN = str(os.getenv('BOT_TOKEN'))
 TABLE_NAME = str(os.getenv('TABLE_NAME'))
 ADMIN_IE = int(os.getenv('ADMIN_IE'))
+USER_HELP = str(os.getenv('USER_HELP'))
 
 # список администраторов бота
 admins = [os.getenv('ADMINS')]

@@ -28,16 +28,6 @@ async def count_users():
         return None
 
 
-async def get_all_user_ids():
-    """ Получение списка всех ID"""
-    try:
-        user_ids = await db.select([IndividualEntrepreneur.user_id]).gino.all()
-        return [user_id[0] for user_id in user_ids]
-    except Exception as e:
-        logger.exception(f'Ошибка получения всех user_ids: {e}')
-        return []
-
-
 async def select_user(user_id):
     try:
         user = await IndividualEntrepreneur.query.where(IndividualEntrepreneur.user_id == user_id).gino.first()
