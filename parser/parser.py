@@ -7,8 +7,6 @@ from datetime import datetime
 from loader import bot
 
 from utils.db_api.users_commands import get_user_id_by_card_number, update_bonus
-import ssl
-import aiohttp
 
 
 async def current_time_formatted():
@@ -49,6 +47,7 @@ class AsyncLoginSessionManager:
 
     def __init__(self, login_url='https://p.vendista.ru/Auth/Login'):
         self.login_url = login_url
+        self.session = None  # Инициализировать сеанс как Нет
 
     async def __aenter__(self):
         self.session = aiohttp.ClientSession()
@@ -58,13 +57,8 @@ class AsyncLoginSessionManager:
         await self.session.close()
 
     async def login(self, login, password):
-        ssl_ctx = ssl.create_default_context()
-        ssl_ctx.check_hostname = False
-        ssl_ctx.verify_mode = ssl.CERT_NONE
-
-        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=ssl_ctx)) as session:
-            async with session.get(self.login_url) as response:
-                html = await response.text()
+        async with self.session.get(self.login_url) as response:
+            html = await response.text()
 
         soup = BeautifulSoup(html, 'html.parser')
         verification_token = soup.find('input', {'name': '__RequestVerificationToken'}).get('value')
@@ -77,62 +71,54 @@ class AsyncLoginSessionManager:
             'Password': password,
         }
 
-        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=ssl_ctx)) as session:
-            async with session.post(auth_url, data=login_data) as response:
-                if response.ok:
-                    return True
-                else:
-                    logger.error('Authentication failed!')
-                    await bot.send_message(chat_id=5669831950,
-                                           text='Аутентификация не удалась!')
-                    return False
+        async with self.session.post(auth_url, data=login_data) as response:
+            if response.ok:
+                return True
+            else:
+                logger.error('Authentication failed!')
+                return False
 
     async def get_bonuses_data(self, user_data):
         user_id = user_data['user_id']
         try:
-            ssl_ctx = ssl.create_default_context()
-            ssl_ctx.check_hostname = False
-            ssl_ctx.verify_mode = ssl.CERT_NONE
+            while not stop_flag:  # Проверяйте флаг перед каждой итерацией
+                unique_card_numbers = set()
+                for page_number in range(1, 2):
+                    bonuses_url_page = f'https://p.vendista.ru/Bonuses?OrderByColumn=3&OrderDesc=True&PageNumber={page_number}&ItemsOnPage=200&FilterText='
 
-            async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=ssl_ctx)) as session:
-                while not stop_flag:  # Проверяйте флаг перед каждой итерацией
-                    unique_card_numbers = set()
-                    for page_number in range(1, 2):
-                        bonuses_url_page = f'https://p.vendista.ru/Bonuses?OrderByColumn=3&OrderDesc=True&PageNumber={page_number}&ItemsOnPage=200&FilterText='
+                    async with self.session.get(bonuses_url_page) as response_bonuses:
+                        html_bonuses_page = await response_bonuses.text()
 
-                        async with session.get(bonuses_url_page) as response_bonuses:
-                            html_bonuses_page = await response_bonuses.text()
+                    soup_bonuses_page = BeautifulSoup(html_bonuses_page, 'html.parser')
+                    rows = soup_bonuses_page.select('.catalog__body .row')
 
-                        soup_bonuses_page = BeautifulSoup(html_bonuses_page, 'html.parser')
-                        rows = soup_bonuses_page.select('.catalog__body .row')
+                    # текущее время
+                    date_str_now = str(await current_time_formatted())
+                    # время из БД последнего запроса
+                    date_str_bd = await get_last_time(int(user_id))
+                    # date_str_bd = '11.12.2023 20:00:00'
 
-                        # текущее время
-                        date_str_now = str(await current_time_formatted())
-                        # время из БД последнего запроса
-                        date_str_bd = await get_last_time(int(user_id))
-                        # date_str_bd = '11.12.2023 20:00:00'
+                    for row in rows:
+                        columns = row.select('.catalog__table_td')
+                        if columns:
+                            card_number = columns[1].text.strip()
+                            bonus_balance = columns[3].text.strip()
+                            sale_time = columns[4].text.strip()
+                            unique_card_numbers.add(card_number)
 
-                        for row in rows:
-                            columns = row.select('.catalog__table_td')
-                            if columns:
-                                card_number = columns[1].text.strip()
-                                bonus_balance = columns[3].text.strip()
-                                sale_time = columns[4].text.strip()
-                                unique_card_numbers.add(card_number)
-
-                                # сравниваем время последнего обновления со временем последней покупки
-                                if await compare_dates(sale_time, date_str_bd):
-                                    # смотрим у какого пользователя совпадает номер карты
-                                    user = await get_user_id_by_card_number(card_number)
-                                    if user:
-                                        # отправляем сообщение пользователю
-                                        await bot.send_message(user, f'бонусы 💳{card_number}: {bonus_balance}')
-                                        # сохраняем количество бонусов в БД
-                                        bonus = await parse_amount_string(bonus_balance)
-                                        await update_bonus(user, bonus)
-                        # сохраняем текущее время в БД
-                        await change_last_time(user_id, date_str_now)
-                    await asyncio.sleep(30)
+                            # сравниваем время последнего обновления со временем последней покупки
+                            if await compare_dates(sale_time, date_str_bd):
+                                # смотрим у какого пользователя совпадает номер карты
+                                user = await get_user_id_by_card_number(card_number)
+                                if user:
+                                    # отправляем сообщение пользователю
+                                    await bot.send_message(user, f'бонусы 💳{card_number}: {bonus_balance}')
+                                    # сохраняем количество бонусов в БД
+                                    bonus = await parse_amount_string(bonus_balance)
+                                    await update_bonus(user, bonus)
+                    # сохраняем текущее время в БД
+                    await change_last_time(user_id, date_str_now)
+                await asyncio.sleep(30)
         except Exception as e:
             logger.error(f'Ошибка извлечения бонусных данных для User ID {user_id}!', e)
             await bot.send_message(chat_id=5669831950, text=f'Ошибка извлечения бонусных данных для User ID {user_id}!')
