@@ -1,7 +1,6 @@
 import asyncio
 import platform
 from bs4 import BeautifulSoup
-from loguru import logger
 import requests
 
 if platform.system() == 'Windows':
@@ -41,6 +40,7 @@ async def authorize(username, password):
     try:
         # Извлекаем данные из таблицы
         soup_bonuses = BeautifulSoup(response_bonuses.text, 'html.parser').find('div', class_='pagination').find_all('a')[-2].text
+        print(soup_bonuses)
         return True
 
     except Exception:
