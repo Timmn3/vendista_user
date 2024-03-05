@@ -39,7 +39,7 @@ async def authorize(username, password):
     # Проверяем результат перехода
     try:
         # Извлекаем данные из таблицы
-        soup_bonuses = BeautifulSoup(response_bonuses.text, 'html.parser').find('div', class_='pagination').find_all('a')[-2].text
+        soup_bonuses = BeautifulSoup(response_bonuses.text, 'html.parser').text
         print(soup_bonuses)
         return True
 
