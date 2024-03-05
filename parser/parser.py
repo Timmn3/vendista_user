@@ -159,6 +159,7 @@ async def parsing_main(users_data):
 if __name__ == "__main__":
     users_data_ = [
         {'user_id': 5669831950, 'login': 'golana127@mail.ru', 'password': 'qrjyat'},
+        {'user_id': 1089138631, 'login': 'begemotkofe@mail.ru', 'password': 'dimbego2023'},
         # {'user_id': 1009831950, 'login': 'rrrr@mail.ru', 'password': 'dddd'}
     ]
 
