@@ -1,10 +1,11 @@
-import aiohttp
+import requests
 import asyncio
 from bs4 import BeautifulSoup
 from loguru import logger
 from utils.db_api.ie_commands import change_last_time, get_last_time
 from datetime import datetime
 from loader import bot
+from fake_useragent import UserAgent
 
 from utils.db_api.users_commands import get_user_id_by_card_number, update_bonus
 
@@ -48,17 +49,18 @@ class AsyncLoginSessionManager:
     def __init__(self, login_url='https://p.vendista.ru/Auth/Login'):
         self.login_url = login_url
         self.session = None  # Инициализировать сеанс как Нет
+        self.user_agent = UserAgent()
 
     async def __aenter__(self):
-        self.session = aiohttp.ClientSession()
+        self.session = requests.Session()
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
-        await self.session.close()
+        self.session.close()
 
     async def login(self, login, password):
-        async with self.session.get(self.login_url) as response:
-            html = await response.text()
+        response = self.session.get(self.login_url)
+        html = response.text
 
         soup = BeautifulSoup(html, 'html.parser')
         verification_token = soup.find('input', {'name': '__RequestVerificationToken'}).get('value')
@@ -71,12 +73,12 @@ class AsyncLoginSessionManager:
             'Password': password,
         }
 
-        async with self.session.post(auth_url, data=login_data) as response:
-            if response.ok:
-                return True
-            else:
-                logger.error('Authentication failed!')
-                return False
+        response = self.session.post(auth_url, data=login_data, headers={'User-Agent': self.user_agent.random})
+        if response.ok:
+            return True
+        else:
+            logger.error('Authentication failed!')
+            return False
 
     async def get_bonuses_data(self, user_data):
         user_id = user_data['user_id']
@@ -86,8 +88,8 @@ class AsyncLoginSessionManager:
                 for page_number in range(1, 2):
                     bonuses_url_page = f'https://p.vendista.ru/Bonuses?OrderByColumn=3&OrderDesc=True&PageNumber={page_number}&ItemsOnPage=200&FilterText='
 
-                    async with self.session.get(bonuses_url_page) as response_bonuses:
-                        html_bonuses_page = await response_bonuses.text()
+                    response_bonuses = self.session.get(bonuses_url_page, headers={'User-Agent': self.user_agent.random})
+                    html_bonuses_page = response_bonuses.text
 
                     soup_bonuses_page = BeautifulSoup(html_bonuses_page, 'html.parser')
                     rows = soup_bonuses_page.select('.catalog__body .row')
@@ -158,9 +160,7 @@ async def parsing_main(users_data):
 
 if __name__ == "__main__":
     users_data_ = [
-        {'user_id': 5669831950, 'login': 'golana127@mail.ru', 'password': 'qrjyat'},
-        {'user_id': 1089138631, 'login': 'begemotkofe@mail.ru', 'password': 'dimbego2023'},
-        # {'user_id': 1009831950, 'login': 'rrrr@mail.ru', 'password': 'dddd'}
+        # {'user_id': 5669831950, 'login': 'golana127@mail.ru', 'password': 'qrjyat'},
+        # {'user_id': 1089138631, 'login': 'begemotkofe@mail.ru', 'password': 'dimbego2023'},
+        {'user_id': 1009831950, 'login': 'rrrr@mail.ru', 'password': 'dddd'}
     ]
-
-    asyncio.run(parsing_main(users_data_))
